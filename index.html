@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corporate &amp; Wholesale Reporting — Sample Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0e1726; --panel:#15203433; --canvas:#f4f6fb; --tile:#ffffff;
+    --ink:#16202e; --muted:#64748b; --line:#e6eaf1;
+    --brand:#0a9d62; --brand2:#15c27a; --accent:#f5b301; --accent2:#2f81f7;
+    --neg:#e5484d; --pos:#0a9d62;
+    --shadow:0 1px 2px rgba(16,29,48,.06),0 8px 24px rgba(16,29,48,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--ink);
+    font-family:"IBM Plex Sans",sans-serif;-webkit-font-smoothing:antialiased}
+  .num{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+
+  /* Header */
+  header{background:linear-gradient(110deg,#0b1322 0%,#11203a 55%,#0a9d62 220%);
+    color:#fff;padding:18px 26px 14px;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(600px 200px at 88% -40%,rgba(21,194,122,.35),transparent 70%);pointer-events:none}
+  .htop{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:relative;z-index:1}
+  .brand{display:flex;align-items:center;gap:13px}
+  .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--brand2),var(--brand));font-family:"Sora";font-weight:800;font-size:18px;
+    box-shadow:0 4px 14px rgba(10,157,98,.45)}
+  h1{font-family:"Sora";font-weight:700;font-size:19px;margin:0;letter-spacing:-.2px}
+  .sub{font-size:12px;color:#9fb2cc;margin-top:2px}
+  .pill{font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+    background:rgba(245,179,1,.15);color:#ffd569;border:1px solid rgba(245,179,1,.4);
+    padding:3px 9px;border-radius:999px}
+  .author{text-align:right;font-size:12px;color:#cdd9ec;line-height:1.45}
+  .author b{color:#fff;font-weight:600}
+
+  /* Filter bar */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;position:relative;z-index:1}
+  .flabel{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#8ea3c0;margin-right:2px}
+  .seg{display:inline-flex;background:#0c1726;border:1px solid #25344d;border-radius:9px;padding:3px}
+  .seg button{font-family:inherit;font-size:12.5px;font-weight:600;color:#9fb2cc;background:none;border:none;
+    padding:6px 13px;border-radius:6px;cursor:pointer;transition:.15s}
+  .seg button.on{background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;box-shadow:0 2px 8px rgba(10,157,98,.4)}
+  select{font-family:inherit;font-size:12.5px;font-weight:600;color:#e7eefb;background:#0c1726;
+    border:1px solid #25344d;border-radius:8px;padding:7px 11px;cursor:pointer}
+
+  /* Canvas */
+  main{padding:20px 24px 14px;max-width:1320px;margin:0 auto}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+  .kpi{background:var(--tile);border:1px solid var(--line);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand)}
+  .kpi.k2::before{background:var(--accent2)} .kpi.k3::before{background:var(--accent)}
+  .kpi.k4::before{background:var(--brand2)} .kpi.k5::before{background:#9b6dff}
+  .kpi .lab{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.2px;text-transform:uppercase}
+  .kpi .val{font-size:25px;font-weight:600;margin-top:7px;letter-spacing:-.5px}
+  .kpi .val small{font-size:13px;color:var(--muted);font-weight:500}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;margin-top:8px;
+    padding:2px 7px;border-radius:999px}
+  .delta.up{color:var(--pos);background:rgba(10,157,98,.1)}
+  .delta.down{color:var(--neg);background:rgba(229,72,77,.1)}
+
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .card{background:var(--tile);border:1px solid var(--line);border-radius:14px;padding:15px 16px 12px;box-shadow:var(--shadow);min-width:0}
+  .span6{grid-column:span 6} .span4{grid-column:span 4} .span8{grid-column:span 8}
+  .span5{grid-column:span 5} .span7{grid-column:span 7} .span12{grid-column:span 12}
+  .ch-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .ch-title{font-family:"Sora";font-weight:600;font-size:14px;letter-spacing:-.1px}
+  .ch-sub{font-size:11px;color:var(--muted)}
+  .kpa{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--brand);
+    background:rgba(10,157,98,.08);padding:2px 7px;border-radius:6px;white-space:nowrap}
+  .cwrap{position:relative;height:230px}
+  .cwrap.tall{height:250px}
+
+  /* Compliance + table */
+  .bar-row{margin:11px 2px}
+  .bar-row .bl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+  .bar-row .bl b{font-weight:600} .bar-row .bl .v{font-family:"IBM Plex Mono";font-weight:600}
+  .track{height:9px;background:#eef1f6;border-radius:99px;position:relative;overflow:hidden}
+  .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand2),var(--brand))}
+  .fill.warn{background:linear-gradient(90deg,#f7c948,var(--accent))}
+  .fill.bad{background:linear-gradient(90deg,#f08c8e,var(--neg))}
+  .tgt{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b2740}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:2px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600}
+  td.r,th.r{text-align:right;font-family:"IBM Plex Mono";font-weight:600}
+  .chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px}
+  .chip.g{color:var(--pos);background:rgba(10,157,98,.1)} .chip.y{color:#b97d00;background:rgba(245,179,1,.15)}
+
+  footer{max-width:1320px;margin:6px auto 26px;padding:0 26px;color:var(--muted);font-size:11.5px;line-height:1.6}
+  footer b{color:#475569}
+  @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}
+    .span6,.span4,.span8,.span5,.span7{grid-column:span 12}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <div class="brand">
+      <div class="logo">CW</div>
+      <div>
+        <h1>Corporate &amp; Wholesale — Reporting &amp; Compliance</h1>
+        <div class="sub">Executive analytics dashboard · FY2025 · <span class="pill">Sample · Synthetic data</span></div>
+      </div>
+    </div>
+    <div class="author">
+      Prepared by <b>Kgakgamatso Letsweletse</b><br>
+      Portfolio sample · PowerBI-style reporting
+    </div>
+  </div>
+  <div class="filters">
+    <span class="flabel">Segment</span>
+    <div class="seg" id="segSeg">
+      <button data-seg="all" class="on">All</button>
+      <button data-seg="Corporate">Corporate</button>
+      <button data-seg="Wholesale">Wholesale</button>
+      <button data-seg="Government">Government</button>
+    </div>
+    <span class="flabel" style="margin-left:8px">Period</span>
+    <select id="selQ">
+      <option value="Q1">Q1 2025</option>
+      <option value="Q2">Q2 2025</option>
+      <option value="Q3">Q3 2025</option>
+      <option value="Q4" selected>Q4 2025</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card span7">
+      <div class="ch-head"><div><div class="ch-title">Revenue by Product Line</div>
+        <div class="ch-sub">Quarterly, BWP millions</div></div><span class="kpa">Reporting management</span></div>
+      <div class="cwrap"><canvas id="cRev"></canvas></div>
+    </div>
+    <div class="card span5">
+      <div class="ch-head"><div><div class="ch-title">Wholesale Interconnect Traffic</div>
+        <div class="ch-sub">Inbound vs outbound minutes (millions)</div></div><span class="kpa">Database mgmt</span></div>
+      <div class="cwrap"><canvas id="cTraffic"></canvas></div>
+    </div>
+
+    <div class="card span7">
+      <div class="ch-head"><div><div class="ch-title">Sales: Forecast vs Actual</div>
+        <div class="ch-sub">Revenue attainment, BWP millions</div></div><span class="kpa">Sales forecasting</span></div>
+      <div class="cwrap"><canvas id="cForecast"></canvas></div>
+    </div>
+    <div class="card span5">
+      <div class="ch-head"><div><div class="ch-title">Market Share — Enterprise Segment</div>
+        <div class="ch-sub">Estimated, by operator</div></div><span class="kpa">Market intelligence</span></div>
+      <div class="cwrap"><canvas id="cShare"></canvas></div>
+    </div>
+
+    <div class="card span5">
+      <div class="ch-head"><div><div class="ch-title">Compliance &amp; SLA Tracker</div>
+        <div class="ch-sub">Actual vs target (▮ = target)</div></div><span class="kpa">Compliance reporting</span></div>
+      <div id="compliance"></div>
+    </div>
+    <div class="card span7">
+      <div class="ch-head"><div><div class="ch-title">Top Corporate &amp; Wholesale Accounts</div>
+        <div class="ch-sub">By revenue, selected period</div></div><span class="kpa">Quality &amp; reporting</span></div>
+      <table id="accTbl"><thead><tr><th>Account</th><th>Sector</th><th class="r">Revenue (BWP)</th><th class="r">QoQ</th><th>SLA</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="card span12">
+      <div class="ch-head"><div><div class="ch-title">ARPU Trend — Corporate &amp; Wholesale</div>
+        <div class="ch-sub">Average revenue per account, BWP, rolling</div></div><span class="kpa">Market intelligence &amp; analytics</span></div>
+      <div class="cwrap" style="height:200px"><canvas id="cArpu"></canvas></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <b>Disclaimer.</b> This is a personal portfolio sample built to demonstrate reporting and analytics capability. All figures are <b>synthetic and illustrative</b>; they are not real data and are not affiliated with, endorsed by, or representative of Mascom Wireless or any operator. Mapped to the Reporting &amp; Compliance KPAs: compliance reporting, reporting management, database management, market intelligence, sales forecasting and quality management.
+</footer>
+
+<script>
+// ---------- Synthetic data model ----------
+const QUARTERS=["Q1","Q2","Q3","Q4"];
+const PRODUCTS=["Corporate Data","Voice & Mobile","Wholesale Interconnect","International Roaming","Cloud & ICT"];
+// revenue[seg][product] = [Q1..Q4]
+const REV={
+  Corporate:{"Corporate Data":[31,34,36,40],"Voice & Mobile":[22,21,23,24],"Wholesale Interconnect":[0,0,0,0],"International Roaming":[6,7,7,8],"Cloud & ICT":[9,11,13,16]},
+  Wholesale:{"Corporate Data":[4,5,5,6],"Voice & Mobile":[3,3,4,4],"Wholesale Interconnect":[38,40,43,47],"International Roaming":[14,15,16,18],"Cloud & ICT":[2,2,3,3]},
+  Government:{"Corporate Data":[12,12,14,15],"Voice & Mobile":[8,9,9,10],"Wholesale Interconnect":[0,0,0,0],"International Roaming":[1,1,2,2],"Cloud & ICT":[5,6,7,9]}
+};
+const TRAFFIC={ // interconnect minutes (m) per quarter [in,out]
+  Corporate:[[0,0],[0,0],[0,0],[0,0]],
+  Wholesale:[[210,178],[224,190],[241,205],[262,221]],
+  Government:[[0,0],[0,0],[0,0],[0,0]]
+};
+const FORECAST={ // [forecast, actual] per quarter (total selected seg)
+  Corporate:[[66,68],[70,73],[75,79],[83,88]],
+  Wholesale:[[58,61],[62,65],[67,71],[74,78]],
+  Government:[[25,26],[27,28],[31,32],[34,36]]
+};
+const ACCOUNTS=[
+  {n:"Orion Mining Group",s:"Mining",seg:"Corporate",r:8.4,q:6.1,sla:"99.4%"},
+  {n:"Kalahari Bank",s:"Financial",seg:"Corporate",r:7.2,q:4.0,sla:"99.7%"},
+  {n:"Regional Carrier A",s:"Wholesale",seg:"Wholesale",r:6.9,q:9.2,sla:"98.9%"},
+  {n:"Ministry of Trade",s:"Government",seg:"Government",r:5.5,q:2.4,sla:"99.1%"},
+  {n:"Delta Retail Holdings",s:"Retail",seg:"Corporate",r:4.8,q:-1.3,sla:"99.5%"},
+  {n:"International Transit B",s:"Wholesale",seg:"Wholesale",r:4.3,q:7.8,sla:"99.0%"},
+  {n:"National Health Agency",s:"Government",seg:"Government",r:3.6,q:1.1,sla:"98.7%"}
+];
+const SHARE={Corporate:[44,33,16,7],Wholesale:[39,36,18,7],Government:[51,29,14,6],all:[43,34,16,7]};
+const SHARE_LABELS=["Operator A (you)","Operator B","Operator C","Others"];
+const ARPU={ // 8 rolling periods
+  Corporate:[18.1,18.6,19.0,19.4,19.9,20.3,20.9,21.4],
+  Wholesale:[31.2,31.8,32.5,33.0,33.6,34.2,35.0,35.7],
+  Government:[14.0,14.2,14.5,14.7,15.0,15.2,15.5,15.8],
+  all:[20.6,21.0,21.5,21.9,22.4,22.8,23.4,23.9]
+};
+const ARPU_LABELS=["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const COMPLIANCE={ // [actual, target]
+  all:[["Regulatory submissions on-time",97,98],["SLA targets met",98.6,98],["Audit findings closed",91,90],["Data quality / completeness",96,95],["Invoice reconciliation accuracy",99.2,99]],
+};
+
+let SEG="all", Q="Q4";
+const qi=()=>QUARTERS.indexOf(Q);
+const segs=()=> SEG==="all"?["Corporate","Wholesale","Government"]:[SEG];
+const COL={"Corporate Data":"#0a9d62","Voice & Mobile":"#2f81f7","Wholesale Interconnect":"#f5b301","International Roaming":"#9b6dff","Cloud & ICT":"#14b8a6"};
+const fmt=n=>n.toLocaleString("en",{maximumFractionDigits:1});
+
+// aggregate revenue by product across selected segments, for a quarter index
+function revByProduct(idx){return PRODUCTS.map(p=>segs().reduce((a,s)=>a+REV[s][p][idx],0));}
+function revTotal(idx){return revByProduct(idx).reduce((a,b)=>a+b,0);}
+function trafficQ(idx){return segs().reduce((a,s)=>[a[0]+TRAFFIC[s][idx][0],a[1]+TRAFFIC[s][idx][1]],[0,0]);}
+function forecastSeries(){return QUARTERS.map((_,i)=>segs().reduce((a,s)=>[a[0]+FORECAST[s][i][0],a[1]+FORECAST[s][i][1]],[0,0]));}
+
+// ---------- KPI cards ----------
+function renderKPIs(){
+  const i=qi(), prev=Math.max(0,i-1);
+  const tot=revTotal(i), totPrev=revTotal(prev);
+  const wi=PRODUCTS.indexOf("Wholesale Interconnect");
+  const wRev=revByProduct(i)[wi], wRevP=revByProduct(prev)[wi];
+  const tr=trafficQ(i), trP=trafficQ(prev), totMin=tr[0]+tr[1], totMinP=trP[0]+trP[1];
+  const accounts=ACCOUNTS.filter(a=>SEG==="all"||a.seg===SEG).length;
+  const accCount = SEG==="all"?482:(SEG==="Corporate"?263:SEG==="Wholesale"?54:165);
+  const accPrev = Math.round(accCount/1.04);
+  const d=(a,b)=> b? ((a-b)/b*100):0;
+  const cards=[
+    {l:"Total C&W Revenue",v:"BWP "+fmt(tot)+"M",d:d(tot,totPrev),k:""},
+    {l:"Wholesale Interconnect",v:"BWP "+fmt(wRev)+"M",d:d(wRev,wRevP),k:"k2"},
+    {l:"SLA Compliance",v:"98.6<small>%</small>",d:0.4,k:"k3",fixed:true},
+    {l:"Regulatory On-Time",v:"97<small>%</small>",d:1.0,k:"k4",fixed:true},
+    {l:"Active Accounts",v:fmt(accCount),d:d(accCount,accPrev),k:"k5"},
+  ];
+  document.getElementById("kpis").innerHTML=cards.map(c=>{
+    const up=c.d>=0; const dd=Math.abs(c.d).toFixed(1);
+    return `<div class="kpi ${c.k}"><div class="lab">${c.l}</div>
+      <div class="val num">${c.v}</div>
+      <div class="delta ${up?'up':'down'}">${up?'▲':'▼'} ${dd}% <span style="color:var(--muted);font-weight:500">vs prior Q</span></div></div>`;
+  }).join("");
+}
+
+// ---------- Charts ----------
+let cRev,cTraffic,cForecast,cShare,cArpu;
+Chart.defaults.font.family="'IBM Plex Sans',sans-serif";
+Chart.defaults.font.size=11.5;
+Chart.defaults.color="#64748b";
+const gridc={color:"#eef1f6"};
+
+function buildCharts(){
+  cRev=new Chart(document.getElementById("cRev"),{type:"bar",
+    data:{labels:QUARTERS.map(q=>q+" '25"),datasets:PRODUCTS.map(p=>({label:p,backgroundColor:COL[p],borderRadius:3,
+      data:QUARTERS.map((_,i)=>segs().reduce((a,s)=>a+REV[s][p][i],0))}))},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,padding:10,usePointStyle:true,pointStyle:"rectRounded"}}},
+      scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:gridc,ticks:{callback:v=>v}}}}});
+
+  const tr=()=>QUARTERS.map((_,i)=>trafficQ(i));
+  cTraffic=new Chart(document.getElementById("cTraffic"),{type:"line",
+    data:{labels:QUARTERS.map(q=>q+" '25"),datasets:[
+      {label:"Inbound",data:tr().map(x=>x[0]),borderColor:"#0a9d62",backgroundColor:"rgba(10,157,98,.12)",fill:true,tension:.35,borderWidth:2,pointRadius:3},
+      {label:"Outbound",data:tr().map(x=>x[1]),borderColor:"#f5b301",backgroundColor:"rgba(245,179,1,.10)",fill:true,tension:.35,borderWidth:2,pointRadius:3}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,usePointStyle:true,pointStyle:"line"}}},
+      scales:{x:{grid:{display:false}},y:{grid:gridc,beginAtZero:true}}}});
+
+  const fc=forecastSeries();
+  cForecast=new Chart(document.getElementById("cForecast"),{type:"bar",
+    data:{labels:QUARTERS.map(q=>q+" '25"),datasets:[
+      {type:"bar",label:"Actual",data:fc.map(x=>x[1]),backgroundColor:"#0a9d62",borderRadius:4,order:2,barPercentage:.55},
+      {type:"line",label:"Forecast",data:fc.map(x=>x[0]),borderColor:"#1b2740",borderDash:[5,4],borderWidth:2,pointRadius:3,pointBackgroundColor:"#1b2740",tension:.2,order:1}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,usePointStyle:true}}},
+      scales:{x:{grid:{display:false}},y:{grid:gridc,beginAtZero:true}}}});
+
+  cShare=new Chart(document.getElementById("cShare"),{type:"doughnut",
+    data:{labels:SHARE_LABELS,datasets:[{data:SHARE[SEG],backgroundColor:["#0a9d62","#2f81f7","#f5b301","#cbd5e1"],borderWidth:2,borderColor:"#fff"}]},
+    options:{maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"right",labels:{boxWidth:11,boxHeight:11,padding:11,usePointStyle:true,pointStyle:"circle"}},
+      tooltip:{callbacks:{label:c=>c.label+": "+c.parsed+"%"}}}}});
+
+  cArpu=new Chart(document.getElementById("cArpu"),{type:"line",
+    data:{labels:ARPU_LABELS,datasets:[{label:"ARPU (BWP)",data:ARPU[SEG],borderColor:"#2f81f7",
+      backgroundColor:"rgba(47,129,247,.10)",fill:true,tension:.35,borderWidth:2.5,pointRadius:3,pointBackgroundColor:"#2f81f7"}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:gridc}}}});
+}
+
+function refreshCharts(){
+  cRev.data.datasets.forEach(ds=>{ds.data=QUARTERS.map((_,i)=>segs().reduce((a,s)=>a+REV[s][ds.label][i],0));});
+  cRev.update();
+  const tr=QUARTERS.map((_,i)=>trafficQ(i));
+  cTraffic.data.datasets[0].data=tr.map(x=>x[0]); cTraffic.data.datasets[1].data=tr.map(x=>x[1]); cTraffic.update();
+  const fc=forecastSeries(); cForecast.data.datasets[0].data=fc.map(x=>x[1]); cForecast.data.datasets[1].data=fc.map(x=>x[0]); cForecast.update();
+  cShare.data.datasets[0].data=SHARE[SEG]; cShare.update();
+  cArpu.data.datasets[0].data=ARPU[SEG]; cArpu.update();
+}
+
+// ---------- Compliance bars + table ----------
+function renderCompliance(){
+  const rows=COMPLIANCE.all.map(([name,act,tgt])=>{
+    const cls=act>=tgt?"":(act>=tgt-2?"warn":"bad");
+    return `<div class="bar-row"><div class="bl"><b>${name}</b><span class="v">${act}% <span style="color:var(--muted)">/ ${tgt}%</span></span></div>
+      <div class="track"><div class="fill ${cls}" style="width:${act}%"></div><div class="tgt" style="left:${tgt}%"></div></div></div>`;
+  }).join("");
+  document.getElementById("compliance").innerHTML=rows;
+}
+function renderTable(){
+  const list=ACCOUNTS.filter(a=>SEG==="all"||a.seg===SEG).sort((a,b)=>b.r-a.r);
+  document.querySelector("#accTbl tbody").innerHTML=list.map(a=>{
+    const up=a.q>=0;
+    return `<tr><td>${a.n}</td><td>${a.s}</td><td class="r">${a.r.toFixed(1)}M</td>
+      <td class="r" style="color:${up?'var(--pos)':'var(--neg)'}">${up?'+':''}${a.q.toFixed(1)}%</td>
+      <td><span class="chip ${parseFloat(a.sla)>=99?'g':'y'}">${a.sla}</span></td></tr>`;
+  }).join("");
+}
+
+// ---------- wire up ----------
+function renderAll(){renderKPIs();renderCompliance();renderTable();}
+document.getElementById("segSeg").addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON")return;
+  document.querySelectorAll("#segSeg button").forEach(b=>b.classList.remove("on"));
+  e.target.classList.add("on"); SEG=e.target.dataset.seg; renderAll(); refreshCharts();
+});
+document.getElementById("selQ").addEventListener("change",e=>{Q=e.target.value;renderAll();});
+
+buildCharts(); renderAll();
+</script>
+</body>
+</html>
